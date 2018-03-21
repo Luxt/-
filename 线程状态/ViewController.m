@@ -10,12 +10,19 @@
 
 @interface ViewController ()
 
+@property(nonatomic,assign)int tickets;
+
+/** 锁  */
+@property(nonatomic,strong)NSObject * lockObjc;
+
 @end
 
 @implementation ViewController
 
 - (void)viewDidLoad {
     [super viewDidLoad];
+    
+    _lockObjc = [NSObject new];
     // Do any additional setup after loading the view, typically from a nib.
 }
 
@@ -25,8 +32,71 @@
     
 //    [NSThread exit];
 //    [self threadDemo];
-    [self exitDemo];
+//    [self exitDemo];
+//    [self threadDemo1];
+    self.tickets = 20;
+    NSThread *t1 = [[NSThread alloc]initWithTarget:self selector:@selector(saleTicks) object:nil];
+    t1.name = @"售票员 A";
+    [t1 start];
+    
+    NSThread *t2 = [[NSThread alloc]initWithTarget:self selector:@selector(saleTicks) object:nil];
+    t2.name = @"售票员 B";
+    [t2 start];
 }
+
+- (void)saleTicks{
+    while (YES) {
+        
+        [NSThread sleepForTimeInterval:1.0];
+        //互斥锁 -保证锁内的代码，同一时间，只有一条线程执行
+        //互斥锁它的范围,应该尽量小,锁范围越大,效率越低!
+        //参数:就是能够加锁的任意 NSOjbect 对象
+        //局部变量: 每个线程单独拥有的,无法锁住!!
+        //注意: 锁一定要是所有线程共享的对象!!
+        //        NSObject * lockObj = [[NSObject alloc]init];
+        @synchronized(self.lockObjc)
+        {
+            //1，判断是否有票
+            if (self.tickets > 0)
+            {
+                //如国有就卖出一张
+                self.tickets--;
+                
+                NSLog(@"剩下%d涨票  %@",self.tickets,[NSThread currentThread]);
+                
+            }else
+            {
+                //3.如果没有了，提示用户
+                NSLog(@"卖完了！%@",[NSThread currentThread]);
+                break;
+            }
+        }
+        
+        
+    }
+}
+
+
+
+
+- (void)threadDemo1{
+    NSThread *t = [[NSThread alloc]initWithTarget:self selector:@selector(test) object:nil];
+    //优先级 从0.0 -- 1.0 默认值 0.5
+    t.threadPriority = 0.1;
+    
+    /**
+     优先级 只是保证CPU调度的可能性会高！
+     多线程的目的：将耗时操作放在后台，不阻塞UI线程
+     */
+}
+
+- (void)test{
+    for (int i = 0; i < 20; i++) {
+        NSLog(@"%@ %d",[NSThread currentThread],i);
+    }
+}
+
+
 
 - (void)exitDemo
 {
@@ -43,7 +113,7 @@
     [[NSThread mainThread]start];
 }
 
-- (void)threadDemo{
+-(void)threadDemo{
    
     //创建线程
     NSThread *t = [[NSThread alloc]initWithTarget:self selector:@selector(theadStatue) object:nil];
